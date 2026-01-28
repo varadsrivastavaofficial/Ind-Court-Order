@@ -29,6 +29,17 @@ jobs:
         run: npm install
       - name: Build
         run: npm run build
+      # =========================================================================================
+      # IMPORTANT: AUTHENTICATION & DEPLOYMENT SETUP
+      #
+      # The following steps require secrets to be configured in your GitHub repository:
+      # 1. PROJECT_ID: Your Firebase project ID.
+      # 2. WIF_PROVIDER: The Workload Identity Provider resource name.
+      # 3. WIF_SERVICE_ACCOUNT: The email of the service account.
+      #
+      # To add them, go to your repository's "Settings" > "Secrets and variables" > "Actions".
+      # For more info on creating these, see: https://firebase.google.com/docs/app-hosting/github-deploy
+      # =========================================================================================
       - name: Authenticate with Google Cloud
         uses: google-github-actions/auth@v2
         with:
