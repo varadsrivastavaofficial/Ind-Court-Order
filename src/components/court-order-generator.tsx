@@ -3,10 +3,10 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import React, { useRef, useState, useTransition, useEffect } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
-import { Loader2, Download, Sparkles } from 'lucide-react';
+import { Loader2, Download } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -21,7 +21,6 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { generateLegalText } from '@/ai/flows/generate-legal-text-from-description';
 import { CourtSealIcon } from '@/components/icons';
 import {
   Select,
@@ -65,7 +64,7 @@ type LegalDoc = {
 export function CourtOrderGenerator() {
   const { toast } = useToast();
   const [legalDoc, setLegalDoc] = useState<LegalDoc | null>(null);
-  const [isGenerating, startTransition] = useTransition();
+  const [isGenerating, setIsGenerating] = useState(false);
   const previewRef = useRef<HTMLDivElement>(null);
 
   const [clNumber, setClNumber] = useState('');
@@ -91,6 +90,7 @@ export function CourtOrderGenerator() {
   });
 
   const onSubmit = (values: FormValues) => {
+    setIsGenerating(true);
     const processedValues = {
       ...values,
       targetName: capitalizeName(values.targetName),
@@ -99,30 +99,26 @@ export function CourtOrderGenerator() {
     if (values.targetName !== processedValues.targetName) {
         form.setValue('targetName', processedValues.targetName);
     }
+    
+    // Static document generation for GitHub Pages
+    const staticDoc: LegalDoc = {
+        subject: `Regarding grievance of ${values.grievanceType} at ${values.location}`,
+        body: `This is a formal notice regarding an incident of ${values.grievanceType} which occurred at ${values.location}, involving ${processedValues.targetName}. The reported incident is as follows: "${values.incidentDescription}". This matter is being reviewed under the relevant sections of the law. Further action may be taken.`,
+        ipcSections: ['IPC Section 268', 'IPC Section 290'],
+        judge: {
+            name: 'Ashish Garg',
+            title: 'H.J.S.',
+            role: 'Registrar General',
+        },
+        signatureName: 'A. Garg',
+    };
 
-    startTransition(async () => {
-      try {
-        const result = await generateLegalText(processedValues);
-        if (result?.body) {
-          setLegalDoc(result);
-          toast({
-            title: 'Document Generated',
-            description: 'The legal draft has been successfully created.',
-          });
-        } else {
-            throw new Error('AI failed to generate text.');
-        }
-      } catch (error) {
-        console.error('Error generating legal text:', error);
-        toast({
-          variant: 'destructive',
-          title: 'Generation Failed',
-          description:
-            'An error occurred while generating the legal document. Please try again.',
-        });
-        setLegalDoc(null);
-      }
+    setLegalDoc(staticDoc);
+    toast({
+        title: 'Document Generated',
+        description: 'The legal draft has been successfully created.',
     });
+    setIsGenerating(false);
   };
 
   const handleDownloadPdf = async () => {
@@ -180,7 +176,7 @@ export function CourtOrderGenerator() {
               <div className="space-y-4">
                 <h2 className="text-2xl font-bold">File a Grievance</h2>
                 <p className="text-muted-foreground">
-                  Describe the incident, and our AI will draft a formal communication in a judicial style.
+                  Describe the incident, and we will draft a formal communication in a judicial style.
                 </p>
               </div>
 
@@ -265,9 +261,7 @@ export function CourtOrderGenerator() {
                  <Button type="submit" className="w-full" disabled={isGenerating}>
                   {isGenerating ? (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : (
-                    <Sparkles className="mr-2 h-4 w-4" />
-                  )}
+                  ) : null}
                   Generate Document
                 </Button>
                 {legalDoc && (
