@@ -106,10 +106,10 @@ const legalTextPrompt = ai.definePrompt({
       Tasks:
       1.  Use the 'getCurrentJudgeName' tool to get the details of the judge signing the document.
       2.  Create a concise subject line for this communication. It should start with "Regarding" or similar phrasing.
-      3.  Draft the main body of the letter. It should formally state the grievance based on the incident description. Use a professional and objective tone.
+      3.  Draft the main body of the letter. It must be written in a cold, harsh, and strictly formal judicial tone. It should state the grievance directly and authoritatively. Avoid any pleasantries or salutations.
       4.  Use the 'determineIpcSections' tool to find relevant IPC sections for the incident.
       5.  Incorporate the determined IPC sections naturally into the body of the letter where appropriate.
-      6.  The body should be a single paragraph of about 150-250 words. Do not add salutations like "Dear Sir" or closings like "Yours faithfully".
+      6.  The body should be a single paragraph of about 150-250 words.
       7.  Based on the judge's full name, create a signature name in the format 'F. Lastname' (e.g. 'A. Garg' for 'Ashish Garg').
 
       Generate the output in the required JSON format, including all fields from the output schema.

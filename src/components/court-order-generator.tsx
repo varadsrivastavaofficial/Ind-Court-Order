@@ -310,7 +310,7 @@ export function CourtOrderGenerator() {
                     <div className="flex flex-col items-center flex-shrink-0">
                         <CourtSealIcon className="w-24 h-24 text-black/80"/>
                     </div>
-                    <div className="text-right w-1/3">
+                    <div className="text-right w-1/3 whitespace-nowrap">
                         <p>Through E-mail/Registered Post</p>
                     </div>
                 </header>
@@ -327,8 +327,6 @@ export function CourtOrderGenerator() {
                 </div>
 
                 <p className="mb-4"><span className='font-bold'>Subject:- </span>{legalDoc.subject}</p>
-                
-                <p className="mb-4">Madam/Sir,</p>
 
                 <main className="space-y-4 text-justify flex-grow">
                     <p>{legalDoc.body}</p>
@@ -338,7 +336,6 @@ export function CourtOrderGenerator() {
                 <footer className="pt-8">
                     <div className="flex justify-end">
                         <div className="text-left">
-                            <p>Yours faithfully,</p>
                             <p className="font-serif italic text-2xl mt-4 mb-2">{legalDoc.signatureName}</p>
                             <p>({legalDoc.judge.name})</p>
                             <p>{legalDoc.judge.role}</p>
