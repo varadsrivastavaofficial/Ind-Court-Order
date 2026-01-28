@@ -135,9 +135,11 @@ export function CourtOrderGenerator() {
     });
 
     const canvas = await html2canvas(element, {
-      scale: 2,
-      useCORS: true,
-      backgroundColor: '#ffffff',
+        scale: 2,
+        useCORS: true,
+        backgroundColor: '#ffffff',
+        windowWidth: element.scrollWidth,
+        windowHeight: element.scrollHeight,
     });
 
     const imgData = canvas.toDataURL('image/png');
@@ -147,12 +149,14 @@ export function CourtOrderGenerator() {
 
     const canvasWidth = canvas.width;
     const canvasHeight = canvas.height;
+    
+    const ratio = canvasWidth / pdfWidth;
+    const imgHeight = canvasHeight / ratio;
 
-    const imgHeight = (canvasHeight * pdfWidth) / canvasWidth;
     let heightLeft = imgHeight;
     let position = 0;
 
-    pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, imgHeight);
+    pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight);
     heightLeft -= pdfHeight;
 
     while (heightLeft > 0) {
@@ -185,7 +189,7 @@ export function CourtOrderGenerator() {
                 name="targetName"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>To (Recipient Name)</FormLabel>
+                    <FormLabel>Name of Guilty <span className="text-destructive">*</span></FormLabel>
                     <FormControl>
                       <Input placeholder="e.g., John Doe" {...field} />
                     </FormControl>
@@ -199,7 +203,7 @@ export function CourtOrderGenerator() {
                 name="location"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Recipient Location (City/State - India)</FormLabel>
+                    <FormLabel>Guilty Location <span className="text-destructive">*</span></FormLabel>
                     <FormControl>
                       <Input placeholder="e.g., Mumbai, Maharashtra" {...field} />
                     </FormControl>
@@ -213,7 +217,7 @@ export function CourtOrderGenerator() {
                 name="grievanceType"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Grievance Type</FormLabel>
+                    <FormLabel>Grievance Type <span className="text-destructive">*</span></FormLabel>
                     <Select
                       onValueChange={field.onChange}
                       defaultValue={field.value}
@@ -241,7 +245,7 @@ export function CourtOrderGenerator() {
                 name="incidentDescription"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Incident Description</FormLabel>
+                    <FormLabel>Incident Description <span className="text-destructive">*</span></FormLabel>
                     <FormControl>
                       <Textarea
                         placeholder="Provide a detailed account of the incident..."
@@ -294,7 +298,7 @@ export function CourtOrderGenerator() {
               <p className="text-gray-500">Generating legal draft...</p>
             </div>
           ) : legalDoc ? (
-              <div className="flex flex-col text-sm leading-6">
+              <div className="flex flex-col text-sm leading-6 min-h-[calc(297mm*0.8)]">
                 <header className="flex justify-between items-start mb-6">
                     <div className="text-left w-1/3">
                         <p className="font-bold">From,</p>
@@ -326,7 +330,7 @@ export function CourtOrderGenerator() {
                 
                 <p className="mb-4">Madam/Sir,</p>
 
-                <main className="space-y-4 text-justify">
+                <main className="space-y-4 text-justify flex-grow">
                     <p>{legalDoc.body}</p>
                     <p className='mt-4'>Therefore, I am communicating the same for information and compliance.</p>
                 </main>
