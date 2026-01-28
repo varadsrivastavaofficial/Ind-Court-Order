@@ -310,8 +310,8 @@ export function CourtOrderGenerator() {
                     <div className="flex flex-col items-center flex-shrink-0">
                         <CourtSealIcon className="w-24 h-24 text-black/80"/>
                     </div>
-                    <div className="text-right w-1/3 whitespace-nowrap">
-                        <p>Through E-mail/Registered Post</p>
+                    <div className="text-right w-1/3">
+                        <p>Through E-mail/<br />Registered Post</p>
                     </div>
                 </header>
                 
