@@ -53,6 +53,12 @@ type LegalDoc = {
   subject: string;
   body: string;
   ipcSections: string[];
+  judge: {
+    name: string;
+    title: string;
+    role: string;
+  };
+  signatureName: string;
 };
 
 export function CourtOrderGenerator() {
@@ -271,8 +277,8 @@ export function CourtOrderGenerator() {
                 <header className="flex justify-between items-start mb-6">
                     <div className="text-left w-1/3">
                         <p className="font-bold">From,</p>
-                        <p>Ashish Garg, H.J.S.</p>
-                        <p>Registrar General,</p>
+                        <p>{legalDoc.judge.name}, {legalDoc.judge.title}</p>
+                        <p>{legalDoc.judge.role},</p>
                         <p>High Court of Judicature at</p>
                         <p>Allahabad.</p>
                     </div>
@@ -308,9 +314,9 @@ export function CourtOrderGenerator() {
                     <div className="flex justify-end">
                         <div className="text-left">
                             <p>Yours faithfully,</p>
-                            <p className="font-serif italic text-2xl mt-4 mb-2">A. Garg</p>
-                            <p>(Ashish Garg)</p>
-                            <p>Registrar General</p>
+                            <p className="font-serif italic text-2xl mt-4 mb-2">{legalDoc.signatureName}</p>
+                            <p>({legalDoc.judge.name})</p>
+                            <p>{legalDoc.judge.role}</p>
                         </div>
                     </div>
                 </footer>
