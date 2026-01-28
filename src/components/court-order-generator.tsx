@@ -31,6 +31,7 @@ import {
   SelectValue,
 } from './ui/select';
 import { Card, CardContent } from './ui/card';
+import { capitalizeName } from '@/lib/utils';
 
 const grievanceTypes = [
   'Noise',
@@ -90,9 +91,18 @@ export function CourtOrderGenerator() {
   });
 
   const onSubmit = (values: FormValues) => {
+    const processedValues = {
+      ...values,
+      targetName: capitalizeName(values.targetName),
+    };
+    
+    if (values.targetName !== processedValues.targetName) {
+        form.setValue('targetName', processedValues.targetName);
+    }
+
     startTransition(async () => {
       try {
-        const result = await generateLegalText(values);
+        const result = await generateLegalText(processedValues);
         if (result?.body) {
           setLegalDoc(result);
           toast({
