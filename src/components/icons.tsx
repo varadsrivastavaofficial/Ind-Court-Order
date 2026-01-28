@@ -17,10 +17,10 @@ export const CourtSealIcon = (props: React.SVGProps<SVGSVGElement>) => (
     </defs>
     <circle cx="50" cy="50" r="48" fill="none" stroke="currentColor" strokeWidth="1" />
     <circle cx="50" cy="50" r="45" fill="none" stroke="currentColor" strokeWidth="0.5" />
-    <g fill="currentColor" className="text-[7px] font-bold tracking-wider uppercase">
+    <g fill="currentColor" className="text-[7px] font-bold tracking-wider">
       <text>
         <textPath href="#circlePath" startOffset="50%" textAnchor="middle">
-          DISTRICT COURT OF INDIA * सत्यमेव जयते
+          District Court of India * सत्यमेव जयते
         </textPath>
       </text>
     </g>
