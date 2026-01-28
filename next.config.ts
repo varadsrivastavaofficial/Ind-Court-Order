@@ -1,7 +1,14 @@
 import type {NextConfig} from 'next';
 
+const isGithubActions = process.env.GITHUB_ACTIONS === 'true';
+
 const nextConfig: NextConfig = {
-  /* config options here */
+  output: 'export',
+  // The basePath and assetPrefix are configured for GitHub Pages.
+  // The repository name is hardcoded here. If you change your repository name, you'll need to update it.
+  basePath: isGithubActions ? '/nextn' : '',
+  assetPrefix: isGithubActions ? '/nextn/' : '',
+  
   typescript: {
     ignoreBuildErrors: true,
   },
@@ -9,6 +16,8 @@ const nextConfig: NextConfig = {
     ignoreDuringBuilds: true,
   },
   images: {
+    // Disabling image optimization is required for static export to GitHub Pages.
+    unoptimized: true,
     remotePatterns: [
       {
         protocol: 'https',
