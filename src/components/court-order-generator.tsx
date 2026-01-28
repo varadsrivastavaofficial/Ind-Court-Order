@@ -260,14 +260,14 @@ export function CourtOrderGenerator() {
                   <div className="flex flex-col h-full text-sm">
                     <header className="flex justify-between items-start mb-8">
                         <div className="text-left">
-                            <p className="font-bold">CASE NO: 2024-AI-042</p>
-                            <p>COURT: VIRTUAL BENCH</p>
+                            <p className="font-bold">CASE NO: 2024-042</p>
+                            <p>COURT: DISTRICT COURT</p>
                         </div>
                         <CourtSealIcon className="w-24 h-24 text-foreground/80"/>
                     </header>
 
                     <main className="flex-1 space-y-4 text-justify leading-relaxed">
-                        <h3 className="text-center font-bold text-base uppercase mb-6">Order Regarding Grievance</h3>
+                        <h3 className="text-center font-bold text-base mb-6">Order Regarding Grievance</h3>
                         <p>{legalDoc.legalText}</p>
                     </main>
 
@@ -279,8 +279,8 @@ export function CourtOrderGenerator() {
                             </div>
                             <div className="text-center">
                                 <p className="font-serif italic text-base">/Sgd./</p>
-                                <p className="font-bold">AI Magistrate</p>
-                                <p>By Order of the Virtual Bench</p>
+                                <p className="font-bold">Magistrate</p>
+                                <p>By Order of the Court</p>
                             </div>
                         </div>
                         <div className="w-full border-t mt-4 pt-2 text-center text-muted-foreground">

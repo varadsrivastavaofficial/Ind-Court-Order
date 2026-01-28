@@ -20,7 +20,7 @@ export const CourtSealIcon = (props: React.SVGProps<SVGSVGElement>) => (
     <g fill="currentColor" className="text-[7px] font-bold tracking-wider uppercase">
       <text>
         <textPath href="#circlePath" startOffset="50%" textAnchor="middle">
-          AI JURISPRUDENCE SYSTEM * VIRTUAL BENCH
+          DISTRICT COURT OF INDIA * सत्यमेव जयते
         </textPath>
       </text>
     </g>
