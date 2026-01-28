@@ -3,10 +3,10 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import React, { useRef, useState, useTransition } from 'react';
+import React, { useRef, useState, useTransition, useEffect } from 'react';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
-import { Loader2, Download, AlertTriangle, Sparkles } from 'lucide-react';
+import { Loader2, Download, Sparkles } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -50,7 +50,8 @@ const formSchema = z.object({
 type FormValues = z.infer<typeof formSchema>;
 
 type LegalDoc = {
-  legalText: string;
+  subject: string;
+  body: string;
   ipcSections: string[];
 };
 
@@ -59,6 +60,18 @@ export function CourtOrderGenerator() {
   const [legalDoc, setLegalDoc] = useState<LegalDoc | null>(null);
   const [isGenerating, startTransition] = useTransition();
   const previewRef = useRef<HTMLDivElement>(null);
+
+  const [clNumber, setClNumber] = useState('');
+  const [currentDate, setCurrentDate] = useState('');
+
+  useEffect(() => {
+    const date = new Date();
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    setCurrentDate(`${day}/${month}/${year}`);
+    setClNumber(String(Math.floor(Math.random() * 90) + 10));
+  }, []);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -74,7 +87,7 @@ export function CourtOrderGenerator() {
     startTransition(async () => {
       try {
         const result = await generateLegalText(values);
-        if (result?.legalText) {
+        if (result?.body) {
           setLegalDoc(result);
           toast({
             title: 'Document Generated',
@@ -107,8 +120,8 @@ export function CourtOrderGenerator() {
 
     const canvas = await html2canvas(element, {
       scale: 3,
-      backgroundColor: null,
       useCORS: true,
+      backgroundColor: '#ffffff'
     });
     
     const imgData = canvas.toDataURL('image/png');
@@ -125,7 +138,7 @@ export function CourtOrderGenerator() {
     pdf.save('IndCourtOrder-AI-document.pdf');
   };
   
-  const watchedDescription = form.watch('incidentDescription');
+  const formValues = form.watch();
 
   return (
     <div className="container mx-auto grid grid-cols-1 gap-12 p-4 py-8 md:p-8 lg:grid-cols-2">
@@ -136,7 +149,7 @@ export function CourtOrderGenerator() {
               <div className="space-y-4">
                 <h2 className="text-2xl font-bold">File a Grievance</h2>
                 <p className="text-muted-foreground">
-                  Describe the incident, and our AI will draft a formal legal notice in a judicial style.
+                  Describe the incident, and our AI will draft a formal communication in a judicial style.
                 </p>
               </div>
 
@@ -145,7 +158,7 @@ export function CourtOrderGenerator() {
                 name="targetName"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Target Name</FormLabel>
+                    <FormLabel>To (Recipient Name)</FormLabel>
                     <FormControl>
                       <Input placeholder="e.g., John Doe" {...field} />
                     </FormControl>
@@ -159,7 +172,7 @@ export function CourtOrderGenerator() {
                 name="location"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Location (City/State - India)</FormLabel>
+                    <FormLabel>Recipient Location (City/State - India)</FormLabel>
                     <FormControl>
                       <Input placeholder="e.g., Mumbai, Maharashtra" {...field} />
                     </FormControl>
@@ -210,7 +223,7 @@ export function CourtOrderGenerator() {
                       />
                     </FormControl>
                     <FormDescription>
-                      Be as specific as possible for a more accurate legal draft.
+                      This will be used to generate the body of the communication.
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -246,51 +259,65 @@ export function CourtOrderGenerator() {
       <div className="flex items-start justify-center">
         <div
           ref={previewRef}
-          className="w-full max-w-2xl aspect-[210/297] bg-card text-card-foreground rounded-lg shadow-2xl dark:shadow-primary/10 flex flex-col p-8 sm:p-12 font-headline overflow-hidden border"
+          className="w-full max-w-2xl aspect-[210/297] bg-white text-black rounded-lg shadow-2xl flex flex-col p-8 sm:p-12 font-body overflow-hidden border"
         >
-          {legalDoc || isGenerating ? (
-            <div className="relative flex-1 flex flex-col">
-              {isGenerating ? (
-                <div className="m-auto flex flex-col items-center gap-4 text-center">
-                  <Loader2 className="h-12 w-12 animate-spin text-primary" />
-                  <p className="text-muted-foreground">Generating legal draft...</p>
-                </div>
-              ) : (
-                legalDoc && (
-                  <div className="flex flex-col h-full text-sm">
-                    <header className="flex justify-between items-start mb-8">
-                        <div className="text-left">
-                            <p className="font-bold">Case No.: 2024-042</p>
-                            <p>Court: District Court</p>
-                        </div>
-                        <CourtSealIcon className="w-24 h-24 text-foreground/80"/>
-                    </header>
-
-                    <main className="flex-1 space-y-4 text-justify leading-relaxed">
-                        <h3 className="text-center font-bold text-base mb-6">Order Regarding Grievance</h3>
-                        <p>{legalDoc.legalText}</p>
-                    </main>
-
-                    <footer className="mt-auto pt-8 text-xs">
-                        <div className="flex justify-between items-end">
-                            <div>
-                                <p className="font-bold">Cited Sections:</p>
-                                <p>{legalDoc.ipcSections.join(', ')}</p>
-                            </div>
-                            <div className="text-center">
-                                <p className="font-serif italic text-base">/Sgd./</p>
-                                <p className="font-bold">Presiding Judge</p>
-                                <p>By Order of the Court</p>
-                            </div>
-                        </div>
-                    </footer>
-                  </div>
-                )
-              )}
+          {isGenerating ? (
+            <div className="m-auto flex flex-col items-center gap-4 text-center">
+              <Loader2 className="h-12 w-12 animate-spin text-primary" />
+              <p className="text-gray-500">Generating legal draft...</p>
             </div>
+          ) : legalDoc ? (
+              <div className="flex flex-col h-full text-sm leading-6">
+                <header className="flex justify-between items-start mb-6">
+                    <div className="text-left w-1/3">
+                        <p className="font-bold">From,</p>
+                        <p>Ashish Garg, H.J.S.</p>
+                        <p>Registrar General,</p>
+                        <p>High Court of Judicature at</p>
+                        <p>Allahabad.</p>
+                    </div>
+                    <div className="flex flex-col items-center flex-shrink-0">
+                        <CourtSealIcon className="w-24 h-24 text-black/80"/>
+                    </div>
+                    <div className="text-right w-1/3">
+                        <p>Through E-mail/Registered Post</p>
+                    </div>
+                </header>
+                
+                <div className="mb-4">
+                    <p className="font-bold">To,</p>
+                    <p>{formValues.targetName}</p>
+                    <p>{formValues.location}</p>
+                </div>
+
+                <div className="mb-4 flex">
+                  <p className="w-1/2">C.L. No. {clNumber} /Admin. 'D' Section</p>
+                  <p className="w-1/2 text-right">Dated: {currentDate}</p>
+                </div>
+
+                <p className="mb-4"><span className='font-bold'>Subject:- </span>{legalDoc.subject}</p>
+                
+                <p className="mb-4">Madam/Sir,</p>
+
+                <main className="flex-1 space-y-4 text-justify">
+                    <p>{legalDoc.body}</p>
+                    <p className='mt-4'>Therefore, I am communicating the same for information and compliance.</p>
+                </main>
+
+                <footer className="mt-auto pt-8">
+                    <div className="flex justify-end">
+                        <div className="text-left">
+                            <p>Yours faithfully,</p>
+                            <p className="font-serif italic text-2xl mt-4 mb-2">A. Garg</p>
+                            <p>(Ashish Garg)</p>
+                            <p>Registrar General</p>
+                        </div>
+                    </div>
+                </footer>
+              </div>
           ) : (
-             <div className="m-auto flex flex-col items-center justify-center text-center text-muted-foreground select-none">
-              <div className="transform -rotate-12 opacity-50 dark:opacity-20">
+             <div className="m-auto flex flex-col items-center justify-center text-center text-gray-500 select-none">
+              <div className="transform -rotate-12 opacity-50">
                 <h1 className="text-4xl md:text-6xl font-black uppercase">Awaiting</h1>
                 <h1 className="text-4xl md:text-6xl font-black uppercase">Input</h1>
               </div>

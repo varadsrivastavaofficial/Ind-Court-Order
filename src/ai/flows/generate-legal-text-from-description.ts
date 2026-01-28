@@ -26,7 +26,8 @@ const GenerateLegalTextInputSchema = z.object({
 export type GenerateLegalTextInput = z.infer<typeof GenerateLegalTextInputSchema>;
 
 const GenerateLegalTextOutputSchema = z.object({
-  legalText: z.string().describe('The generated legal text mimicking a formal judicial style.'),
+  subject: z.string().describe('A concise subject line for the legal communication.'),
+  body: z.string().describe('The main body of the legal communication, written in a formal style.'),
   ipcSections: z.array(z.string()).describe('List of relevant IPC sections referenced in the legal text.'),
 });
 export type GenerateLegalTextOutput = z.infer<typeof GenerateLegalTextOutputSchema>;
@@ -68,20 +69,23 @@ const legalTextPrompt = ai.definePrompt({
   input: {schema: GenerateLegalTextInputSchema},
   output: {schema: GenerateLegalTextOutputSchema},
   tools: [determineIpcSections],
-  prompt: `You are a legal expert drafting a formal legal notice based on an incident report. Use a cold, judicial, and professional tone.
+  prompt: `You are a legal assistant drafting a formal communication regarding a grievance.
 
-  The incident involves {{targetName}} at {{location}} and is classified as a {{grievanceType}} grievance.
+      Incident Details:
+      - Target: {{targetName}}
+      - Location: {{location}}
+      - Grievance Type: {{grievanceType}}
+      - Description: {{incidentDescription}}
 
-  Incident Description: {{incidentDescription}}
+      Tasks:
+      1.  Create a concise subject line for this communication. It should start with "Regarding" or similar phrasing.
+      2.  Draft the main body of the letter. It should formally state the grievance based on the incident description. Use a professional and objective tone.
+      3.  Use the 'determineIpcSections' tool to find relevant IPC sections for the incident.
+      4.  Incorporate the determined IPC sections naturally into the body of the letter where appropriate.
+      5.  The body should be a single paragraph of about 150-250 words. Do not add salutations like "Dear Sir" or closings like "Yours faithfully".
 
-  Based on the incident, determine relevant IPC sections using the determineIpcSections tool.  Reference those IPC sections in the legal notice.
-
-  The legal text should clearly outline the grievance, reference the relevant IPC sections determined by the determineIpcSections tool, and demand immediate cessation of the offending actions.
-
-  Do not include any conversational language or salutations. The legal text should mimic a formal court order.
-
-  Output a legal text that is approximately 200-300 words in length.
-  `,
+      Generate the output in the required JSON format.
+      `,
 });
 
 const generateLegalTextFlow = ai.defineFlow(
