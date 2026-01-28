@@ -125,22 +125,33 @@ export function CourtOrderGenerator() {
     });
 
     const canvas = await html2canvas(element, {
-      scale: 3,
+      scale: 2,
       useCORS: true,
-      backgroundColor: '#ffffff'
+      backgroundColor: '#ffffff',
     });
-    
+
     const imgData = canvas.toDataURL('image/png');
     const pdf = new jsPDF('p', 'pt', 'a4');
     const pdfWidth = pdf.internal.pageSize.getWidth();
     const pdfHeight = pdf.internal.pageSize.getHeight();
-    const imgWidth = canvas.width;
-    const imgHeight = canvas.height;
-    const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
-    const imgX = (pdfWidth - imgWidth * ratio) / 2;
-    const imgY = 30;
 
-    pdf.addImage(imgData, 'PNG', imgX, imgY, imgWidth * ratio, imgHeight * ratio);
+    const canvasWidth = canvas.width;
+    const canvasHeight = canvas.height;
+
+    const imgHeight = (canvasHeight * pdfWidth) / canvasWidth;
+    let heightLeft = imgHeight;
+    let position = 0;
+
+    pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, imgHeight);
+    heightLeft -= pdfHeight;
+
+    while (heightLeft > 0) {
+      position -= pdfHeight;
+      pdf.addPage();
+      pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight);
+      heightLeft -= pdfHeight;
+    }
+
     pdf.save('IndCourtOrder-AI-document.pdf');
   };
   
@@ -265,15 +276,15 @@ export function CourtOrderGenerator() {
       <div className="flex items-start justify-center">
         <div
           ref={previewRef}
-          className="w-full max-w-2xl aspect-[210/297] bg-white text-black rounded-lg shadow-2xl flex flex-col p-8 sm:p-12 font-body overflow-hidden border"
+          className="w-full max-w-2xl bg-white text-black rounded-lg shadow-2xl flex flex-col p-8 sm:p-12 font-body border"
         >
           {isGenerating ? (
-            <div className="m-auto flex flex-col items-center gap-4 text-center">
+            <div className="m-auto flex flex-col items-center justify-center gap-4 text-center aspect-[210/297]">
               <Loader2 className="h-12 w-12 animate-spin text-primary" />
               <p className="text-gray-500">Generating legal draft...</p>
             </div>
           ) : legalDoc ? (
-              <div className="flex flex-col h-full text-sm leading-6">
+              <div className="flex flex-col text-sm leading-6">
                 <header className="flex justify-between items-start mb-6">
                     <div className="text-left w-1/3">
                         <p className="font-bold">From,</p>
@@ -305,12 +316,12 @@ export function CourtOrderGenerator() {
                 
                 <p className="mb-4">Madam/Sir,</p>
 
-                <main className="flex-1 space-y-4 text-justify">
+                <main className="space-y-4 text-justify">
                     <p>{legalDoc.body}</p>
                     <p className='mt-4'>Therefore, I am communicating the same for information and compliance.</p>
                 </main>
 
-                <footer className="mt-auto pt-8">
+                <footer className="pt-8">
                     <div className="flex justify-end">
                         <div className="text-left">
                             <p>Yours faithfully,</p>
@@ -322,7 +333,7 @@ export function CourtOrderGenerator() {
                 </footer>
               </div>
           ) : (
-             <div className="m-auto flex flex-col items-center justify-center text-center text-gray-500 select-none">
+             <div className="m-auto flex flex-col items-center justify-center text-center text-gray-500 select-none aspect-[210/297]">
               <div className="transform -rotate-12 opacity-50">
                 <h1 className="text-4xl md:text-6xl font-black uppercase">Awaiting</h1>
                 <h1 className="text-4xl md:text-6xl font-black uppercase">Input</h1>
