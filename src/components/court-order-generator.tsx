@@ -31,7 +31,13 @@ import {
 } from './ui/select';
 import { Card, CardContent } from './ui/card';
 import { capitalizeName } from '@/lib/utils';
-import { generateCourtOrder, CourtOrderOutput } from '@/ai/flows/generate-court-order';
+
+// Define the output type locally since the AI flow is removed.
+export type CourtOrderOutput = {
+  subject: string;
+  body: string;
+  ipcSections: string[];
+};
 
 const grievanceTypes = [
   'Noise',
@@ -99,11 +105,22 @@ export function CourtOrderGenerator() {
         form.setValue('targetName', processedValues.targetName);
     }
     
+    // Since this is a static site, we'll generate a placeholder document
+    // without calling the AI.
     try {
-      const aiResult = await generateCourtOrder(processedValues);
+      const staticResult: CourtOrderOutput = {
+        subject: `Legal Notice Regarding ${processedValues.grievanceType}`,
+        body: `This is a formal notice regarding an incident of ${processedValues.grievanceType} which occurred at ${processedValues.location}. The incident has been described as follows: "${processedValues.incidentDescription}". This communication serves as a warning that legal action may be pursued. You are hereby directed to take this matter with the utmost seriousness. The tone must be cold, harsh, and authoritative.`,
+        ipcSections: [
+            'Section 120B: Punishment of criminal conspiracy',
+            'Section 153A: Promoting enmity between different groups',
+            'Section 295A: Deliberate and malicious acts intended to outrage religious feelings',
+            'Section 505: Statements conducing to public mischief',
+        ],
+      };
 
       const fullDoc: LegalDoc = {
-        ...aiResult,
+        ...staticResult,
         judge: {
             name: 'Ashish Garg',
             title: 'H.J.S.',
@@ -112,17 +129,20 @@ export function CourtOrderGenerator() {
         signatureName: 'A. Garg',
       };
 
+      // Simulate a short delay for better UX
+      await new Promise(resolve => setTimeout(resolve, 500));
+
       setLegalDoc(fullDoc);
       toast({
           title: 'Document Generated',
-          description: 'The legal draft has been successfully created with AI.',
+          description: 'The legal draft has been successfully created.',
       });
     } catch (error) {
       console.error('Error generating document:', error);
       toast({
         variant: 'destructive',
         title: 'Generation Failed',
-        description: 'Could not generate the document. Check your API key or try again later.',
+        description: 'An unexpected error occurred while generating the document.',
       });
     } finally {
       setIsGenerating(false);
@@ -367,3 +387,5 @@ export function CourtOrderGenerator() {
     </div>
   );
 }
+
+    
