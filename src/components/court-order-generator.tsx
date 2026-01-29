@@ -31,6 +31,7 @@ import {
 } from './ui/select';
 import { Card, CardContent } from './ui/card';
 import { capitalizeName } from '@/lib/utils';
+import { generateCourtOrder, CourtOrderOutput } from '@/ai/flows/generate-court-order';
 
 const grievanceTypes = [
   'Noise',
@@ -49,10 +50,7 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
-type LegalDoc = {
-  subject: string;
-  body: string;
-  ipcSections: string[];
+type LegalDoc = CourtOrderOutput & {
   judge: {
     name: string;
     title: string;
@@ -89,8 +87,9 @@ export function CourtOrderGenerator() {
     },
   });
 
-  const onSubmit = (values: FormValues) => {
+  const onSubmit = async (values: FormValues) => {
     setIsGenerating(true);
+    setLegalDoc(null);
     const processedValues = {
       ...values,
       targetName: capitalizeName(values.targetName),
@@ -100,25 +99,34 @@ export function CourtOrderGenerator() {
         form.setValue('targetName', processedValues.targetName);
     }
     
-    // Static document generation for GitHub Pages
-    const staticDoc: LegalDoc = {
-        subject: `Regarding grievance of ${values.grievanceType} at ${values.location}`,
-        body: `This is a formal notice regarding an incident of ${values.grievanceType} which occurred at ${values.location}, involving ${processedValues.targetName}. The reported incident is as follows: "${values.incidentDescription}". This matter is being reviewed under the relevant sections of the law. Further action may be taken.`,
-        ipcSections: ['IPC Section 268', 'IPC Section 290'],
+    try {
+      const aiResult = await generateCourtOrder(processedValues);
+
+      const fullDoc: LegalDoc = {
+        ...aiResult,
         judge: {
             name: 'Ashish Garg',
             title: 'H.J.S.',
             role: 'Registrar General',
         },
         signatureName: 'A. Garg',
-    };
+      };
 
-    setLegalDoc(staticDoc);
-    toast({
-        title: 'Document Generated',
-        description: 'The legal draft has been successfully created.',
-    });
-    setIsGenerating(false);
+      setLegalDoc(fullDoc);
+      toast({
+          title: 'Document Generated',
+          description: 'The legal draft has been successfully created with AI.',
+      });
+    } catch (error) {
+      console.error('Error generating document:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Generation Failed',
+        description: 'Could not generate the document. Check your API key or try again later.',
+      });
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   const handleDownloadPdf = async () => {
@@ -187,7 +195,7 @@ export function CourtOrderGenerator() {
                   <FormItem>
                     <FormLabel>Name of Guilty <span className="text-destructive">*</span></FormLabel>
                     <FormControl>
-                      <Input placeholder="e.g., John Doe" {...field} />
+                      <Input placeholder="e.g., Narendra Modi" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -324,6 +332,14 @@ export function CourtOrderGenerator() {
 
                 <main className="space-y-4 text-justify flex-grow">
                     <p>{legalDoc.body}</p>
+                     <div className="mt-4">
+                        <p className="font-bold">This matter may fall under the purview of the following sections of the Indian Penal Code:</p>
+                        <ul className="list-disc list-inside">
+                            {legalDoc.ipcSections.map((section) => (
+                                <li key={section}>{section}</li>
+                            ))}
+                        </ul>
+                    </div>
                     <p className='mt-4'>Therefore, I am communicating the same for information and compliance.</p>
                 </main>
 
