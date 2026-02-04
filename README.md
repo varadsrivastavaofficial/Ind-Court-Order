@@ -13,7 +13,11 @@ A Next.js application to generate realistic judicial-style legal notices using A
      - **Key**: `GEMINI_API_KEY`
      - **Value**: [Get your key here](https://aistudio.google.com/)
    - Click **Save**.
-4. **Redeploy**: Go to the **Deployments** tab in Vercel, click the three dots on your latest deployment, and select **Redeploy** to apply the new API key.
+4. **CRITICAL STEP: Redeploy**: 
+   - Environment variables are only applied during the build process.
+   - Go to the **Deployments** tab in Vercel.
+   - Find your latest deployment, click the three dots (**...**), and select **Redeploy**.
+   - **Do not skip this step**, or you will continue to see `API_KEY_MISSING`.
 
 ## Local Development
 

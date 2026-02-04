@@ -51,20 +51,21 @@ Format:
 });
 
 export async function generateCourtOrder(input: GenerateCourtOrderInput): Promise<{ success: boolean; data?: GenerateCourtOrderOutput; error?: string }> {
-  // Explicitly check for API key
+  // Explicitly check for API key in server environment
   const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || process.env.GOOGLE_GENAI_API_KEY;
   
   if (!apiKey) {
+    console.error('SERVER_ERROR: GEMINI_API_KEY is undefined in process.env');
     return { 
       success: false, 
-      error: 'API_KEY_MISSING: Please configure GEMINI_API_KEY in your Vercel project settings.' 
+      error: 'API_KEY_MISSING: The API key is not configured. Please add GEMINI_API_KEY to Vercel environment variables and REDEPLOY the project.' 
     };
   }
 
   try {
     const { output } = await generateCourtOrderPrompt(input);
     if (!output) {
-      return { success: false, error: 'AI_EMPTY_RESPONSE: The AI returned an empty response. Please try again.' };
+      return { success: false, error: 'AI_EMPTY_RESPONSE: The AI returned an empty response. Please try again with more detail.' };
     }
     return { success: true, data: output };
   } catch (error: any) {
@@ -72,9 +73,9 @@ export async function generateCourtOrder(input: GenerateCourtOrderInput): Promis
     
     let errorMessage = error.message || 'An unexpected error occurred during AI generation.';
     
-    if (errorMessage.includes('FAILED_PRECONDITION')) {
-      errorMessage = 'API_KEY_INVALID: The provided Gemini API key is invalid or not activated.';
-    } else if (errorMessage.includes('QUOTA_EXHAUSTED')) {
+    if (errorMessage.includes('403') || errorMessage.includes('PERMISSION_DENIED') || errorMessage.includes('FAILED_PRECONDITION')) {
+      errorMessage = 'API_KEY_INVALID: The provided Gemini API key is invalid or lacks necessary permissions.';
+    } else if (errorMessage.includes('429') || errorMessage.includes('QUOTA_EXHAUSTED')) {
       errorMessage = 'QUOTA_EXHAUSTED: You have reached your Gemini API limit. Please try again later.';
     }
 
