@@ -31,13 +31,7 @@ import {
 } from './ui/select';
 import { Card, CardContent } from './ui/card';
 import { capitalizeName } from '@/lib/utils';
-
-// Define the output type locally since the AI flow is removed.
-export type CourtOrderOutput = {
-  subject: string;
-  body: string;
-  ipcSections: string[];
-};
+import { generateCourtOrder, type GenerateCourtOrderOutput } from '@/ai/flows/generate-court-order';
 
 const grievanceTypes = [
   'Noise',
@@ -56,7 +50,7 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
-type LegalDoc = CourtOrderOutput & {
+type LegalDoc = GenerateCourtOrderOutput & {
   judge: {
     name: string;
     title: string;
@@ -105,22 +99,11 @@ export function CourtOrderGenerator() {
         form.setValue('targetName', processedValues.targetName);
     }
     
-    // Since this is a static site, we'll generate a placeholder document
-    // without calling the AI.
     try {
-      const staticResult: CourtOrderOutput = {
-        subject: `Legal Notice Regarding ${processedValues.grievanceType}`,
-        body: `This is a formal notice regarding an incident of ${processedValues.grievanceType} which occurred at ${processedValues.location}. The incident has been described as follows: "${processedValues.incidentDescription}". This communication serves as a warning that legal action may be pursued. You are hereby directed to take this matter with the utmost seriousness. The tone must be cold, harsh, and authoritative.`,
-        ipcSections: [
-            'Section 120B: Punishment of criminal conspiracy',
-            'Section 153A: Promoting enmity between different groups',
-            'Section 295A: Deliberate and malicious acts intended to outrage religious feelings',
-            'Section 505: Statements conducing to public mischief',
-        ],
-      };
+      const result = await generateCourtOrder(processedValues);
 
       const fullDoc: LegalDoc = {
-        ...staticResult,
+        ...result,
         judge: {
             name: 'Ashish Garg',
             title: 'H.J.S.',
@@ -129,20 +112,17 @@ export function CourtOrderGenerator() {
         signatureName: 'A. Garg',
       };
 
-      // Simulate a short delay for better UX
-      await new Promise(resolve => setTimeout(resolve, 500));
-
       setLegalDoc(fullDoc);
       toast({
           title: 'Document Generated',
-          description: 'The legal draft has been successfully created.',
+          description: 'The AI has successfully drafted the legal notice.',
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error generating document:', error);
       toast({
         variant: 'destructive',
         title: 'Generation Failed',
-        description: 'An unexpected error occurred while generating the document.',
+        description: error.message || 'Check your Gemini API key in Vercel environment variables.',
       });
     } finally {
       setIsGenerating(false);
@@ -200,11 +180,20 @@ export function CourtOrderGenerator() {
       <Card className="lg:h-fit lg:sticky lg:top-24">
         <CardContent className="p-6">
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+            <form 
+              onSubmit={form.handleSubmit(onSubmit)} 
+              className="space-y-8"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  form.handleSubmit(onSubmit)();
+                }
+              }}
+            >
               <div className="space-y-4">
                 <h2 className="text-2xl font-bold">File a Grievance</h2>
                 <p className="text-muted-foreground">
-                  Describe the incident, and we will draft a formal communication in a judicial style.
+                  Provide details below. Our AI will analyze the incident and draft a formal judicial notice.
                 </p>
               </div>
 
@@ -278,7 +267,7 @@ export function CourtOrderGenerator() {
                       />
                     </FormControl>
                     <FormDescription>
-                      This will be used to generate the body of the communication.
+                      The AI will use this description to determine legal context and relevant IPC sections.
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -290,7 +279,7 @@ export function CourtOrderGenerator() {
                   {isGenerating ? (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   ) : null}
-                  Generate Document
+                  Analyze & Generate
                 </Button>
                 {legalDoc && (
                    <Button
@@ -317,7 +306,7 @@ export function CourtOrderGenerator() {
           {isGenerating ? (
             <div className="m-auto flex flex-col items-center justify-center gap-4 text-center aspect-[210/297]">
               <Loader2 className="h-12 w-12 animate-spin text-primary" />
-              <p className="text-gray-500">Generating legal draft...</p>
+              <p className="text-gray-500">AI is analyzing the grievance...</p>
             </div>
           ) : legalDoc ? (
               <div className="flex flex-col text-sm leading-6 min-h-[calc(297mm*0.8)]">
@@ -333,7 +322,7 @@ export function CourtOrderGenerator() {
                         <CourtSealIcon className="w-24 h-24 text-black/80"/>
                     </div>
                     <div className="text-right w-1/3">
-                        <p>Through E-mail/<br />Registered Post</p>
+                        <p className="whitespace-pre-line">Through E-mail/<br />Registered Post</p>
                     </div>
                 </header>
                 
@@ -353,14 +342,14 @@ export function CourtOrderGenerator() {
                 <main className="space-y-4 text-justify flex-grow">
                     <p>{legalDoc.body}</p>
                      <div className="mt-4">
-                        <p className="font-bold">This matter may fall under the purview of the following sections of the Indian Penal Code:</p>
-                        <ul className="list-disc list-inside">
+                        <p className="font-bold">This matter falls under the purview of the following sections of the Indian Penal Code:</p>
+                        <ul className="list-disc list-inside mt-2 space-y-1">
                             {legalDoc.ipcSections.map((section) => (
                                 <li key={section}>{section}</li>
                             ))}
                         </ul>
                     </div>
-                    <p className='mt-4'>Therefore, I am communicating the same for information and compliance.</p>
+                    <p className='mt-4'>You are hereby directed to comply immediately. Failure to do so will result in stern judicial action.</p>
                 </main>
 
                 <footer className="pt-8">
@@ -377,9 +366,9 @@ export function CourtOrderGenerator() {
              <div className="m-auto flex flex-col items-center justify-center text-center text-gray-500 select-none aspect-[210/297]">
               <div className="transform -rotate-12 opacity-50">
                 <h1 className="text-4xl md:text-6xl font-black uppercase">Awaiting</h1>
-                <h1 className="text-4xl md:text-6xl font-black uppercase">Input</h1>
+                <h1 className="text-4xl md:text-6xl font-black uppercase">Analysis</h1>
               </div>
-              <p className="mt-8 text-sm">Your generated document will appear here.</p>
+              <p className="mt-8 text-sm">AI-generated legal notice will appear here.</p>
             </div>
           )}
         </div>
@@ -387,5 +376,3 @@ export function CourtOrderGenerator() {
     </div>
   );
 }
-
-    
