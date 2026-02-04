@@ -100,15 +100,15 @@ export function CourtOrderGenerator() {
       targetName: capitalizeName(values.targetName),
     };
     
-    if (values.targetName !== processedValues.targetName) {
-        form.setValue('targetName', processedValues.targetName);
-    }
-    
     try {
       const result = await generateCourtOrder(processedValues);
 
+      if (!result.success) {
+        throw new Error(result.error);
+      }
+
       const fullDoc: LegalDoc = {
-        ...result,
+        ...result.data!,
         judge: {
             name: 'Ashish Garg',
             title: 'H.J.S.',
@@ -124,14 +124,7 @@ export function CourtOrderGenerator() {
       });
     } catch (err: any) {
       console.error('Error generating document:', err);
-      let message = err.message || 'An unexpected error occurred.';
-      
-      if (message.includes('API_KEY_MISSING')) {
-        message = 'Gemini API Key is missing. Please add GEMINI_API_KEY to your Vercel/environment variables.';
-      } else if (message.includes('API_KEY_INVALID')) {
-        message = 'The Gemini API Key provided is invalid. Please check your key at aistudio.google.com.';
-      }
-
+      const message = err.message || 'An unexpected error occurred.';
       setError(message);
       toast({
         variant: 'destructive',
@@ -197,12 +190,6 @@ export function CourtOrderGenerator() {
             <form 
               onSubmit={form.handleSubmit(onSubmit)} 
               className="space-y-8"
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                  e.preventDefault();
-                  form.handleSubmit(onSubmit)();
-                }
-              }}
             >
               <div className="space-y-4">
                 <h2 className="text-2xl font-bold">File a Grievance</h2>
@@ -214,7 +201,7 @@ export function CourtOrderGenerator() {
               {error && (
                 <Alert variant="destructive">
                   <AlertCircle className="h-4 w-4" />
-                  <AlertTitle>Configuration Error</AlertTitle>
+                  <AlertTitle>Generation Error</AlertTitle>
                   <AlertDescription>{error}</AlertDescription>
                 </Alert>
               )}

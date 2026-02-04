@@ -5,7 +5,6 @@
  *
  * - generateCourtOrder - A function that handles the generation process.
  * - GenerateCourtOrderInput - The input type for the function.
- * - GenerateCourtOrderOutput - The return type for the function.
  */
 
 import { ai } from '@/ai/genkit';
@@ -51,21 +50,34 @@ Format:
 - IPC Sections: Identify at least 3 relevant sections of the Indian Penal Code that could apply to this specific incident description.`,
 });
 
-export async function generateCourtOrder(input: GenerateCourtOrderInput): Promise<GenerateCourtOrderOutput> {
-  // Explicitly check for API key to provide a helpful developer error
-  if (!process.env.GEMINI_API_KEY && !process.env.GOOGLE_API_KEY) {
-    throw new Error('API_KEY_MISSING: Please configure GEMINI_API_KEY in your environment variables.');
+export async function generateCourtOrder(input: GenerateCourtOrderInput): Promise<{ success: boolean; data?: GenerateCourtOrderOutput; error?: string }> {
+  // Explicitly check for API key
+  const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || process.env.GOOGLE_GENAI_API_KEY;
+  
+  if (!apiKey) {
+    return { 
+      success: false, 
+      error: 'API_KEY_MISSING: Please configure GEMINI_API_KEY in your Vercel project settings.' 
+    };
   }
 
   try {
     const { output } = await generateCourtOrderPrompt(input);
-    if (!output) throw new Error('AI returned an empty response. Please try again.');
-    return output;
-  } catch (error: any) {
-    // Surface the specific Genkit/Gemini error to the UI
-    if (error.message?.includes('FAILED_PRECONDITION')) {
-      throw new Error('API_KEY_INVALID: The provided Gemini API key is invalid or not activated.');
+    if (!output) {
+      return { success: false, error: 'AI_EMPTY_RESPONSE: The AI returned an empty response. Please try again.' };
     }
-    throw error;
+    return { success: true, data: output };
+  } catch (error: any) {
+    console.error('Genkit Error:', error);
+    
+    let errorMessage = error.message || 'An unexpected error occurred during AI generation.';
+    
+    if (errorMessage.includes('FAILED_PRECONDITION')) {
+      errorMessage = 'API_KEY_INVALID: The provided Gemini API key is invalid or not activated.';
+    } else if (errorMessage.includes('QUOTA_EXHAUSTED')) {
+      errorMessage = 'QUOTA_EXHAUSTED: You have reached your Gemini API limit. Please try again later.';
+    }
+
+    return { success: false, error: errorMessage };
   }
 }
