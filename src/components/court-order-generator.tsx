@@ -1,3 +1,4 @@
+
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -6,7 +7,7 @@ import { z } from 'zod';
 import React, { useRef, useState, useEffect } from 'react';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
-import { Loader2, Download } from 'lucide-react';
+import { Loader2, Download, AlertCircle } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -32,6 +33,7 @@ import {
 import { Card, CardContent } from './ui/card';
 import { capitalizeName } from '@/lib/utils';
 import { generateCourtOrder, type GenerateCourtOrderOutput } from '@/ai/flows/generate-court-order';
+import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 
 const grievanceTypes = [
   'Noise',
@@ -63,6 +65,7 @@ export function CourtOrderGenerator() {
   const { toast } = useToast();
   const [legalDoc, setLegalDoc] = useState<LegalDoc | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const previewRef = useRef<HTMLDivElement>(null);
 
   const [clNumber, setClNumber] = useState('');
@@ -90,6 +93,8 @@ export function CourtOrderGenerator() {
   const onSubmit = async (values: FormValues) => {
     setIsGenerating(true);
     setLegalDoc(null);
+    setError(null);
+    
     const processedValues = {
       ...values,
       targetName: capitalizeName(values.targetName),
@@ -117,12 +122,21 @@ export function CourtOrderGenerator() {
           title: 'Document Generated',
           description: 'The AI has successfully drafted the legal notice.',
       });
-    } catch (error: any) {
-      console.error('Error generating document:', error);
+    } catch (err: any) {
+      console.error('Error generating document:', err);
+      let message = err.message || 'An unexpected error occurred.';
+      
+      if (message.includes('API_KEY_MISSING')) {
+        message = 'Gemini API Key is missing. Please add GEMINI_API_KEY to your Vercel/environment variables.';
+      } else if (message.includes('API_KEY_INVALID')) {
+        message = 'The Gemini API Key provided is invalid. Please check your key at aistudio.google.com.';
+      }
+
+      setError(message);
       toast({
         variant: 'destructive',
         title: 'Generation Failed',
-        description: error.message || 'Check your Gemini API key in Vercel environment variables.',
+        description: message,
       });
     } finally {
       setIsGenerating(false);
@@ -196,6 +210,14 @@ export function CourtOrderGenerator() {
                   Provide details below. Our AI will analyze the incident and draft a formal judicial notice.
                 </p>
               </div>
+
+              {error && (
+                <Alert variant="destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertTitle>Configuration Error</AlertTitle>
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
+              )}
 
               <FormField
                 control={form.control}

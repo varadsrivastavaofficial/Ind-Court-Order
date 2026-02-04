@@ -52,7 +52,20 @@ Format:
 });
 
 export async function generateCourtOrder(input: GenerateCourtOrderInput): Promise<GenerateCourtOrderOutput> {
-  const { output } = await generateCourtOrderPrompt(input);
-  if (!output) throw new Error('Failed to generate document. Please ensure your GEMINI_API_KEY is configured correctly.');
-  return output;
+  // Explicitly check for API key to provide a helpful developer error
+  if (!process.env.GEMINI_API_KEY && !process.env.GOOGLE_API_KEY) {
+    throw new Error('API_KEY_MISSING: Please configure GEMINI_API_KEY in your environment variables.');
+  }
+
+  try {
+    const { output } = await generateCourtOrderPrompt(input);
+    if (!output) throw new Error('AI returned an empty response. Please try again.');
+    return output;
+  } catch (error: any) {
+    // Surface the specific Genkit/Gemini error to the UI
+    if (error.message?.includes('FAILED_PRECONDITION')) {
+      throw new Error('API_KEY_INVALID: The provided Gemini API key is invalid or not activated.');
+    }
+    throw error;
+  }
 }
