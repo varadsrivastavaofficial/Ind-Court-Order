@@ -55,7 +55,7 @@ export async function generateCourtOrder(input: GenerateCourtOrderInput): Promis
   const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || process.env.GOOGLE_GENAI_API_KEY;
   
   if (!apiKey) {
-    console.error('SERVER_ERROR: GEMINI_API_KEY is undefined in process.env');
+    console.error('SERVER_ERROR: API Key is missing. Keys found:', Object.keys(process.env).filter(k => k.includes('KEY')));
     return { 
       success: false, 
       error: 'API_KEY_MISSING: The API key is not configured. Please add GEMINI_API_KEY to Vercel environment variables and REDEPLOY the project.' 
