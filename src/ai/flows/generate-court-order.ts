@@ -28,6 +28,7 @@ export type GenerateCourtOrderOutput = z.infer<typeof GenerateCourtOrderOutputSc
 
 const generateCourtOrderPrompt = ai.definePrompt({
   name: 'generateCourtOrderPrompt',
+  model: 'googleai/gemini-1.5-flash',
   input: { schema: GenerateCourtOrderInputSchema },
   output: { schema: GenerateCourtOrderOutputSchema },
   prompt: `You are the Registrar General of the High Court of Judicature at Allahabad. 
