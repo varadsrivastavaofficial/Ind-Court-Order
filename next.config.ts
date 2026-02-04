@@ -30,6 +30,12 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  experimental: {
+    allowedDevOrigins: [
+      '*.cluster-xpmcxs2fjnhg6xvn446ubtgpio.cloudworkstations.dev',
+      'localhost:9002',
+    ],
+  },
 };
 
 export default nextConfig;
