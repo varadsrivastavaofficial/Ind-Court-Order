@@ -1,6 +1,11 @@
+
 'use server';
 /**
  * @fileOverview A flow to generate a judicial-style court order or legal notice.
+ *
+ * - generateCourtOrder - A function that handles the generation process.
+ * - GenerateCourtOrderInput - The input type for the function.
+ * - GenerateCourtOrderOutput - The return type for the function.
  */
 
 import { ai } from '@/ai/genkit';
@@ -21,12 +26,11 @@ const GenerateCourtOrderOutputSchema = z.object({
 });
 export type GenerateCourtOrderOutput = z.infer<typeof GenerateCourtOrderOutputSchema>;
 
-export async function generateCourtOrder(input: GenerateCourtOrderInput): Promise<GenerateCourtOrderOutput> {
-  const prompt = ai.definePrompt({
-    name: 'generateCourtOrderPrompt',
-    input: { schema: GenerateCourtOrderInputSchema },
-    output: { schema: GenerateCourtOrderOutputSchema },
-    prompt: `You are the Registrar General of the High Court of Judicature at Allahabad. 
+const generateCourtOrderPrompt = ai.definePrompt({
+  name: 'generateCourtOrderPrompt',
+  input: { schema: GenerateCourtOrderInputSchema },
+  output: { schema: GenerateCourtOrderOutputSchema },
+  prompt: `You are the Registrar General of the High Court of Judicature at Allahabad. 
 
 Generate a formal legal notice based on the following grievance:
 Target: {{{targetName}}}
@@ -44,9 +48,10 @@ Format:
 - Subject: A concise legal subject line.
 - Body: A detailed account of the violation and a directive for compliance.
 - IPC Sections: Identify at least 3 relevant sections of the Indian Penal Code that could apply to this specific incident description.`,
-  });
+});
 
-  const { output } = await prompt(input);
-  if (!output) throw new Error('Failed to generate document');
+export async function generateCourtOrder(input: GenerateCourtOrderInput): Promise<GenerateCourtOrderOutput> {
+  const { output } = await generateCourtOrderPrompt(input);
+  if (!output) throw new Error('Failed to generate document. Please ensure your GEMINI_API_KEY is configured correctly.');
   return output;
 }
