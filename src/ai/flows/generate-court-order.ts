@@ -1,7 +1,7 @@
 'use server';
 /**
  * @fileOverview A flow to generate a judicial-style court order or legal notice.
- * Using gemini-1.5-pro for better reliability and avoiding regional flash 404s.
+ * Using gemini-1.5-pro for better reliability across regions.
  */
 
 import { ai } from '@/ai/genkit';
@@ -23,25 +23,25 @@ const GenerateCourtOrderOutputSchema = z.object({
 export type GenerateCourtOrderOutput = z.infer<typeof GenerateCourtOrderOutputSchema>;
 
 export async function generateCourtOrder(input: GenerateCourtOrderInput): Promise<{ success: boolean; data?: GenerateCourtOrderOutput; error?: string }> {
-  const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_GENAI_API_KEY || process.env.GOOGLE_API_KEY;
+  // Check if any variant of the key exists for better debugging
+  const hasKey = !!(process.env.GEMINI_API_KEY || process.env.GOOGLE_GENAI_API_KEY || process.env.GOOGLE_API_KEY);
   
-  if (!apiKey) {
+  if (!hasKey) {
     return { 
       success: false, 
-      error: 'API_KEY_MISSING: No API key found. Please add GEMINI_API_KEY to Vercel Environment Variables and REDEPLOY.' 
+      error: 'API_KEY_MISSING: The server could not find GEMINI_API_KEY. Please check Vercel Settings > Environment Variables.' 
     };
   }
 
   try {
-    // Switching to gemini-1.5-pro to avoid the 404 issue with flash in some regions
     const { output } = await ai.generate({
       model: 'googleai/gemini-1.5-pro',
       input: input,
       output: { schema: GenerateCourtOrderOutputSchema },
       config: {
-        temperature: 0.8,
+        temperature: 0.7,
       },
-      prompt: `You are the Registrar General of the High Court of Judicature at Allahabad. 
+      prompt: `You are the Registrar General of the High Court of Judicature. 
 
 Generate a formal legal notice based on the following grievance:
 Target: ${input.targetName}
@@ -70,11 +70,11 @@ Format:
     
     let errorMessage = error.message || 'An unexpected error occurred.';
     
-    // Improved error mapping for better debugging in the UI
+    // Improved error mapping
     if (errorMessage.includes('404') || errorMessage.includes('not found')) {
-      errorMessage = 'MODEL_NOT_FOUND: The model gemini-1.5-pro could not be accessed. This usually means the API key is restricted or the region is not supported by Google AI Studio for this specific model.';
+      errorMessage = 'MODEL_NOT_FOUND: Gemini 1.5 Pro could not be accessed. This might be a regional restriction or API version mismatch.';
     } else if (errorMessage.includes('403') || errorMessage.includes('PERMISSION_DENIED')) {
-      errorMessage = 'API_KEY_INVALID: Your Gemini API key is invalid or lacks permissions for this model.';
+      errorMessage = 'API_KEY_INVALID: Your Gemini API key is invalid or lacks permissions.';
     } else if (errorMessage.includes('429')) {
       errorMessage = 'QUOTA_EXHAUSTED: Gemini API rate limit reached.';
     }
