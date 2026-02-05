@@ -27,7 +27,7 @@ export type GenerateCourtOrderOutput = z.infer<typeof GenerateCourtOrderOutputSc
 
 const generateCourtOrderPrompt = ai.definePrompt({
   name: 'generateCourtOrderPrompt',
-  model: 'googleai/gemini-1.5-flash',
+  model: 'gemini-1.5-flash',
   input: { schema: GenerateCourtOrderInputSchema },
   output: { schema: GenerateCourtOrderOutputSchema },
   prompt: `You are the Registrar General of the High Court of Judicature at Allahabad. 
@@ -51,14 +51,13 @@ Format:
 });
 
 export async function generateCourtOrder(input: GenerateCourtOrderInput): Promise<{ success: boolean; data?: GenerateCourtOrderOutput; error?: string }> {
-  // Check for API key. Vercel env vars are accessed via process.env.
   const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || process.env.GOOGLE_GENAI_API_KEY;
   
   if (!apiKey) {
-    console.error('[AI_ERROR] API Key is missing in process.env.');
+    console.error('[AI_ERROR] API Key is missing.');
     return { 
       success: false, 
-      error: 'API_KEY_MISSING: The GEMINI_API_KEY environment variable is not found. Please add it in Vercel Project Settings > Environment Variables and REDEPLOY.' 
+      error: 'API_KEY_MISSING: Please add GEMINI_API_KEY to Vercel Environment Variables and REDEPLOY.' 
     };
   }
 
@@ -73,9 +72,8 @@ export async function generateCourtOrder(input: GenerateCourtOrderInput): Promis
     
     let errorMessage = error.message || 'An unexpected error occurred during AI generation.';
     
-    // Handle the specific 404 error if it persists by suggesting a different model check
     if (errorMessage.includes('404') || errorMessage.includes('not found')) {
-      errorMessage = 'MODEL_NOT_FOUND: The Gemini model could not be found. This might be a temporary API issue or a regional restriction. Please ensure your API key is from a supported region at aistudio.google.com.';
+      errorMessage = 'MODEL_NOT_FOUND: The model gemini-1.5-flash could not be accessed. This usually means the API key is restricted or the region is not supported by Google AI Studio for this specific model.';
     } else if (errorMessage.includes('403') || errorMessage.includes('PERMISSION_DENIED')) {
       errorMessage = 'API_KEY_INVALID: Your Gemini API key is invalid or lacks permissions.';
     } else if (errorMessage.includes('429')) {
