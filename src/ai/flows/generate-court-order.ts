@@ -1,7 +1,7 @@
-
 'use server';
 /**
  * @fileOverview A flow to generate a judicial-style court order or legal notice.
+ * Using gemini-1.5-pro for better reliability and avoiding regional flash 404s.
  */
 
 import { ai } from '@/ai/genkit';
@@ -33,13 +33,13 @@ export async function generateCourtOrder(input: GenerateCourtOrderInput): Promis
   }
 
   try {
-    // Calling ai.generate directly to ensure the most robust routing
+    // Switching to gemini-1.5-pro to avoid the 404 issue with flash in some regions
     const { output } = await ai.generate({
-      model: 'googleai/gemini-1.5-flash',
+      model: 'googleai/gemini-1.5-pro',
       input: input,
       output: { schema: GenerateCourtOrderOutputSchema },
       config: {
-        temperature: 0.7,
+        temperature: 0.8,
       },
       prompt: `You are the Registrar General of the High Court of Judicature at Allahabad. 
 
@@ -70,10 +70,11 @@ Format:
     
     let errorMessage = error.message || 'An unexpected error occurred.';
     
+    // Improved error mapping for better debugging in the UI
     if (errorMessage.includes('404') || errorMessage.includes('not found')) {
-      errorMessage = 'MODEL_NOT_FOUND: The API endpoint for gemini-1.5-flash returned 404. This often means the API key is restricted or the model is not available in your region.';
+      errorMessage = 'MODEL_NOT_FOUND: The model gemini-1.5-pro could not be accessed. This usually means the API key is restricted or the region is not supported by Google AI Studio for this specific model.';
     } else if (errorMessage.includes('403') || errorMessage.includes('PERMISSION_DENIED')) {
-      errorMessage = 'API_KEY_INVALID: Your Gemini API key is invalid or lacks permissions.';
+      errorMessage = 'API_KEY_INVALID: Your Gemini API key is invalid or lacks permissions for this model.';
     } else if (errorMessage.includes('429')) {
       errorMessage = 'QUOTA_EXHAUSTED: Gemini API rate limit reached.';
     }
