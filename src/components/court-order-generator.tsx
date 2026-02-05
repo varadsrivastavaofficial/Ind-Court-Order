@@ -7,7 +7,7 @@ import { z } from 'zod';
 import React, { useRef, useState, useEffect } from 'react';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
-import { Loader2, Download, AlertCircle } from 'lucide-react';
+import { Loader2, Download, AlertCircle, RefreshCw } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -47,7 +47,7 @@ const formSchema = z.object({
   targetName: z.string().min(2, 'Target name must be at least 2 characters.'),
   location: z.string().min(3, 'Location must be at least 3 characters.'),
   grievanceType: z.enum(grievanceTypes),
-  incidentDescription: z.string().min(20, 'Description must be at least 20 words.'),
+  incidentDescription: z.string().min(20, 'Description must be at least 20 characters.'),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -145,39 +145,48 @@ export function CourtOrderGenerator() {
       description: 'Your download will begin shortly.',
     });
 
-    const canvas = await html2canvas(element, {
-        scale: 2,
-        useCORS: true,
-        backgroundColor: '#ffffff',
-        windowWidth: element.scrollWidth,
-        windowHeight: element.scrollHeight,
-    });
+    try {
+      const canvas = await html2canvas(element, {
+          scale: 2,
+          useCORS: true,
+          backgroundColor: '#ffffff',
+          windowWidth: element.scrollWidth,
+          windowHeight: element.scrollHeight,
+      });
 
-    const imgData = canvas.toDataURL('image/png');
-    const pdf = new jsPDF('p', 'pt', 'a4');
-    const pdfWidth = pdf.internal.pageSize.getWidth();
-    const pdfHeight = pdf.internal.pageSize.getHeight();
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('p', 'pt', 'a4');
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
 
-    const canvasWidth = canvas.width;
-    const canvasHeight = canvas.height;
-    
-    const ratio = canvasWidth / pdfWidth;
-    const imgHeight = canvasHeight / ratio;
+      const canvasWidth = canvas.width;
+      const canvasHeight = canvas.height;
+      
+      const ratio = canvasWidth / pdfWidth;
+      const imgHeight = canvasHeight / ratio;
 
-    let heightLeft = imgHeight;
-    let position = 0;
+      let heightLeft = imgHeight;
+      let position = 0;
 
-    pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight);
-    heightLeft -= pdfHeight;
-
-    while (heightLeft > 0) {
-      position -= pdfHeight;
-      pdf.addPage();
       pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight);
       heightLeft -= pdfHeight;
-    }
 
-    pdf.save('IndCourtOrder-AI-document.pdf');
+      while (heightLeft > 0) {
+        position -= pdfHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight);
+        heightLeft -= pdfHeight;
+      }
+
+      pdf.save('IndCourtOrder-AI-document.pdf');
+    } catch (e) {
+      console.error('PDF Generation failed', e);
+      toast({
+        variant: 'destructive',
+        title: 'Download Failed',
+        description: 'Could not generate PDF. Please try again.',
+      });
+    }
   };
   
   const formValues = form.watch();
@@ -202,7 +211,20 @@ export function CourtOrderGenerator() {
                 <Alert variant="destructive">
                   <AlertCircle className="h-4 w-4" />
                   <AlertTitle>Generation Error</AlertTitle>
-                  <AlertDescription>{error}</AlertDescription>
+                  <AlertDescription className="mt-2">
+                    <p className="mb-4">{error}</p>
+                    {error.includes('API_KEY_MISSING') && (
+                      <div className="text-xs space-y-2 border-t pt-2 mt-2">
+                        <p className="font-bold">How to fix this:</p>
+                        <ol className="list-decimal list-inside space-y-1">
+                          <li>Go to Vercel Dashboard Settings &gt; Environment Variables.</li>
+                          <li>Check if <strong>GEMINI_API_KEY</strong> is set correctly.</li>
+                          <li>Ensure it is enabled for <strong>Production</strong>, <strong>Preview</strong>, and <strong>Development</strong>.</li>
+                          <li>Go to the <strong>Deployments</strong> tab and select <strong>Redeploy</strong> on your latest build.</li>
+                        </ol>
+                      </div>
+                    )}
+                  </AlertDescription>
                 </Alert>
               )}
 
@@ -287,8 +309,10 @@ export function CourtOrderGenerator() {
                  <Button type="submit" className="w-full" disabled={isGenerating}>
                   {isGenerating ? (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : null}
-                  Analyze & Generate
+                  ) : (
+                    <RefreshCw className="mr-2 h-4 w-4" />
+                  )}
+                  {isGenerating ? 'Analyzing...' : 'Analyze & Generate'}
                 </Button>
                 {legalDoc && (
                    <Button
@@ -337,8 +361,8 @@ export function CourtOrderGenerator() {
                 
                 <div className="mb-4">
                     <p className="font-bold">To,</p>
-                    <p>{formValues.targetName}</p>
-                    <p>{formValues.location}</p>
+                    <p>{formValues.targetName || '....................'}</p>
+                    <p>{formValues.location || '....................'}</p>
                 </div>
 
                 <div className="mb-4 flex">

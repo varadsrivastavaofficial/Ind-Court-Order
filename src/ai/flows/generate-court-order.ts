@@ -51,30 +51,33 @@ Format:
 });
 
 export async function generateCourtOrder(input: GenerateCourtOrderInput): Promise<{ success: boolean; data?: GenerateCourtOrderOutput; error?: string }> {
-  // Explicitly check for API key in server environment
+  // Check for API key. Vercel env vars are accessed via process.env.
   const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || process.env.GOOGLE_GENAI_API_KEY;
   
   if (!apiKey) {
-    console.error('SERVER_ERROR: API Key is missing. Keys found:', Object.keys(process.env).filter(k => k.includes('KEY')));
+    // We log the keys found (without values) to help the user debug in Vercel logs
+    const foundKeys = Object.keys(process.env).filter(k => k.toLowerCase().includes('key'));
+    console.error('[AI_ERROR] API Key is missing in process.env. Found keys:', foundKeys);
+    
     return { 
       success: false, 
-      error: 'API_KEY_MISSING: The API key is not configured. Please add GEMINI_API_KEY to Vercel environment variables and REDEPLOY the project.' 
+      error: 'API_KEY_MISSING: The GEMINI_API_KEY environment variable is not found in the Vercel runtime. Please ensure you have added it in Project Settings > Environment Variables for ALL environments (Production, Preview, Development) and then REDEPLOY.' 
     };
   }
 
   try {
     const { output } = await generateCourtOrderPrompt(input);
     if (!output) {
-      return { success: false, error: 'AI_EMPTY_RESPONSE: The AI returned an empty response. Please try again with more detail.' };
+      return { success: false, error: 'AI_EMPTY_RESPONSE: The AI returned an empty response.' };
     }
     return { success: true, data: output };
   } catch (error: any) {
-    console.error('Genkit Error:', error);
+    console.error('[GENKIT_ERROR]', error);
     
     let errorMessage = error.message || 'An unexpected error occurred during AI generation.';
     
-    if (errorMessage.includes('403') || errorMessage.includes('PERMISSION_DENIED') || errorMessage.includes('FAILED_PRECONDITION')) {
-      errorMessage = 'API_KEY_INVALID: The provided Gemini API key is invalid or lacks necessary permissions.';
+    if (errorMessage.includes('403') || errorMessage.includes('PERMISSION_DENIED') || errorMessage.includes('API_KEY_INVALID')) {
+      errorMessage = 'API_KEY_INVALID: The provided Gemini API key is invalid or lacks necessary permissions. Please check your key at aistudio.google.com.';
     } else if (errorMessage.includes('429') || errorMessage.includes('QUOTA_EXHAUSTED')) {
       errorMessage = 'QUOTA_EXHAUSTED: You have reached your Gemini API limit. Please try again later.';
     }
