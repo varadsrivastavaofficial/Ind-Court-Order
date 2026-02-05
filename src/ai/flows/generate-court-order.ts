@@ -25,9 +25,9 @@ const GenerateCourtOrderOutputSchema = z.object({
 });
 export type GenerateCourtOrderOutput = z.infer<typeof GenerateCourtOrderOutputSchema>;
 
-// Use 'googleai/gemini-1.5-flash' which is the standard identifier for Genkit 1.x
 const generateCourtOrderPrompt = ai.definePrompt({
   name: 'generateCourtOrderPrompt',
+  // Using the most standard model identifier for Genkit 1.x with Google AI
   model: 'googleai/gemini-1.5-flash',
   input: { schema: GenerateCourtOrderInputSchema },
   output: { schema: GenerateCourtOrderOutputSchema },
@@ -55,7 +55,7 @@ Format:
 });
 
 export async function generateCourtOrder(input: GenerateCourtOrderInput): Promise<{ success: boolean; data?: GenerateCourtOrderOutput; error?: string }> {
-  // Access key server-side
+  // Access key server-side to check its presence
   const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || process.env.GOOGLE_GENAI_API_KEY;
   
   if (!apiKey) {
