@@ -55,13 +55,10 @@ export async function generateCourtOrder(input: GenerateCourtOrderInput): Promis
   const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || process.env.GOOGLE_GENAI_API_KEY;
   
   if (!apiKey) {
-    // We log the keys found (without values) to help the user debug in Vercel logs
-    const foundKeys = Object.keys(process.env).filter(k => k.toLowerCase().includes('key'));
-    console.error('[AI_ERROR] API Key is missing in process.env. Found keys:', foundKeys);
-    
+    console.error('[AI_ERROR] API Key is missing in process.env.');
     return { 
       success: false, 
-      error: 'API_KEY_MISSING: The GEMINI_API_KEY environment variable is not found in the Vercel runtime. Please ensure you have added it in Project Settings > Environment Variables for ALL environments (Production, Preview, Development) and then REDEPLOY.' 
+      error: 'API_KEY_MISSING: The GEMINI_API_KEY environment variable is not found. Please add it in Vercel Project Settings > Environment Variables and REDEPLOY.' 
     };
   }
 
@@ -76,10 +73,13 @@ export async function generateCourtOrder(input: GenerateCourtOrderInput): Promis
     
     let errorMessage = error.message || 'An unexpected error occurred during AI generation.';
     
-    if (errorMessage.includes('403') || errorMessage.includes('PERMISSION_DENIED') || errorMessage.includes('API_KEY_INVALID')) {
-      errorMessage = 'API_KEY_INVALID: The provided Gemini API key is invalid or lacks necessary permissions. Please check your key at aistudio.google.com.';
-    } else if (errorMessage.includes('429') || errorMessage.includes('QUOTA_EXHAUSTED')) {
-      errorMessage = 'QUOTA_EXHAUSTED: You have reached your Gemini API limit. Please try again later.';
+    // Handle the specific 404 error if it persists by suggesting a different model check
+    if (errorMessage.includes('404') || errorMessage.includes('not found')) {
+      errorMessage = 'MODEL_NOT_FOUND: The Gemini model could not be found. This might be a temporary API issue or a regional restriction. Please ensure your API key is from a supported region at aistudio.google.com.';
+    } else if (errorMessage.includes('403') || errorMessage.includes('PERMISSION_DENIED')) {
+      errorMessage = 'API_KEY_INVALID: Your Gemini API key is invalid or lacks permissions.';
+    } else if (errorMessage.includes('429')) {
+      errorMessage = 'QUOTA_EXHAUSTED: Gemini API rate limit reached.';
     }
 
     return { success: false, error: errorMessage };
